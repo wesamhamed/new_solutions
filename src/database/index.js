@@ -10,33 +10,33 @@ const { getInsertStringFromData, getUpdateStringFromData } = require('../utils')
 /**
  * database tables
  */
-const {User,Address,Profile,Company,City,Country}= require('./entities');
+const { User, Address, Profile, Company, City, Country } = require('./entities');
 
 /**
  * get the appropriate database URL (connectionString) based on the node environment (test, dev, prod)
  */
 const env = process.env.NODE_ENV || 'development';
 const connectionString = envConfig[env].connectionString;
-const pool = new Pool({connectionString});
+const pool = new Pool({ connectionString });
 
 pool.on('connect', () => {
-  if (process.env.NODE_ENV === 'development')
-    console.log('connected to the database');
+    if (process.env.NODE_ENV === 'development')
+        console.log('connected to the database');
 });
 
 pool.on('error', (err, client) => {
-  if (process.env.NODE_ENV === 'development') console.error('Error:', err);
+    if (process.env.NODE_ENV === 'development') console.error('Error:', err);
 });
 
 pool.on('remove', () => {
-  if (process.env.NODE_ENV === 'development') console.log('client removed');
+    if (process.env.NODE_ENV === 'development') console.log('client removed');
 });
 
 /**
  * create all database tables in sequence of their relations
  */
-const createAllTables = async () => {
-  const query = `
+const createAllTables = async() => {
+    const query = `
     ${City.createTable()}
     ${Country.createTable()}
     ${Address.createTable()}
@@ -46,17 +46,17 @@ const createAllTables = async () => {
     
   `;
 
-  await pool.query(query);
+    await pool.query(query);
 };
-const createAllTablesScript = async () => {
-  await createAllTables();
-  await end();
+const createAllTablesScript = async() => {
+    await createAllTables();
+    await end();
 };
 /**
  * drop all database tables in sequence of their relations
  */
-const dropAllTables = async () => {
-  const query = `
+const dropAllTables = async() => {
+    const query = `
     ${City.dropTable()}
     ${Country.dropTable()}
     ${Address.dropTable()}
@@ -65,12 +65,12 @@ const dropAllTables = async () => {
     ${Company.dropTable()}
   `;
 
-  await pool.query(query);
+    await pool.query(query);
 };
 
-const dropAllTablesScript = async () => {
-  await dropAllTables();
-  await end();
+const dropAllTablesScript = async() => {
+    await dropAllTables();
+    await end();
 };
 
 /**
@@ -82,21 +82,21 @@ const dropAllTablesScript = async () => {
  * @param {string} outputExpression - an SQL output expression to append to the insert query
  * @returns {Promise<QueryResult<any>>}
  */
-const insert = async (tableName, data, outputExpression) => {
-  const insertString = getInsertStringFromData(data);
+const insert = async(tableName, data, outputExpression) => {
+    const insertString = getInsertStringFromData(data);
 
-  let insertQuery = `INSERT INTO "${tableName}" ${insertString}`;
+    let insertQuery = `INSERT INTO "${tableName}" ${insertString}`;
 
-  insertQuery += outputExpression ? ` ${outputExpression};` : ';';
+    insertQuery += outputExpression ? ` ${outputExpression};` : ';';
 
-  const query = {
-    text: insertQuery,
-    values: Object.values(data),
-  };
-  if (process.env.NODE_ENV === 'development')
-    console.log('insert -> query', query);
+    const query = {
+        text: insertQuery,
+        values: Object.values(data),
+    };
+    if (process.env.NODE_ENV === 'development')
+        console.log('insert -> query', query);
 
-  return pool.query(query);
+    return pool.query(query);
 };
 
 
@@ -108,20 +108,20 @@ const insert = async (tableName, data, outputExpression) => {
  * @param {string} clause - an SQL clause or condition to append to the SQL query statement
  * @returns {Promise<QueryResult<any>>}
  */
-const select = async (columns, tableName, clause) => {
-  const columnsString =
-    typeof columns === 'string'
-      ? columns
-      : columns.map((col) => `"${col}"`).join(', ');
+const select = async(columns, tableName, clause) => {
+    const columnsString =
+        typeof columns === 'string' ?
+        columns :
+        columns.map((col) => `"${col}"`).join(', ');
 
-  let selectQuery = `SELECT ${columnsString} FROM "${tableName}"`;
+    let selectQuery = `SELECT ${columnsString} FROM "${tableName}"`;
 
-  selectQuery += clause ? ` ${clause};` : ';';
+    selectQuery += clause ? ` ${clause};` : ';';
 
-  if (process.env.NODE_ENV === 'development')
-    console.log('select -> selectQuery', selectQuery);
+    if (process.env.NODE_ENV === 'development')
+        console.log('select -> selectQuery', selectQuery);
 
-  return pool.query(selectQuery);
+    return pool.query(selectQuery);
 };
 /**
  * update data in a table in the database
@@ -132,46 +132,64 @@ const select = async (columns, tableName, clause) => {
  * @param {string} clause - an SQL clause or condition to append to the SQL query statement
  * @returns {Promise<QueryResult<any>>}
  */
-const update = async (tableName, data, clause) => {
-  const updateString = getUpdateStringFromData(data);
+const update = async(tableName, data, clause) => {
+    const updateString = getUpdateStringFromData(data);
 
-  let updateQuery = `UPDATE "${tableName}" SET ${updateString}`;
-  updateQuery += clause ? ` ${clause};` : ';';
+    let updateQuery = `UPDATE "${tableName}" SET ${updateString}`;
+    updateQuery += clause ? ` ${clause};` : ';';
 
-  const query = {
-    text: updateQuery,
-    values: Object.values(data),
-  };
-  if (process.env.NODE_ENV === 'development')
-    console.log('update -> query', query);
+    const query = {
+        text: updateQuery,
+        values: Object.values(data),
+    };
+    if (process.env.NODE_ENV === 'development')
+        console.log('update -> query', query);
 
-  return pool.query(query);
+    return pool.query(query);
 };
+/**
+ * remove data from a table
+ * the columns could be a single column name or an arry of column names to select from the table
+ * @param {string} tableName - table name to select the data from
+ * @param {string} clause - an SQL clause or condition to append to the SQL query statement
+ * @returns {Promise<QueryResult<any>>}
+ */
+const remove = async(tableName, clause) => {
 
-const query = async (query) => {
-  return pool.query(query);
+    let deleteQuery = `DELETE FROM "${tableName}"`;
+
+    deleteQuery += clause ? ` ${clause};` : ';';
+
+    if (process.env.NODE_ENV === 'development')
+        console.log('delete -> deleteQuery', deleteQuery);
+
+    return pool.query(deleteQuery);
+};
+const query = async(query) => {
+    return pool.query(query);
 };
 /**
  * end the pool connection to the database
  * @returns {Promise<void>}
  */
-const end = async () => {
-  return pool.end();
+const end = async() => {
+    return pool.end();
 };
 
 /**
  * @constant DATABASE
  */
 module.exports = {
-  createAllTablesScript,
-  dropAllTablesScript,
-  createAllTables,
-  dropAllTables,
-  insert,
-  select,
-  update,
-  query,
-  end,
+    createAllTablesScript,
+    dropAllTablesScript,
+    createAllTables,
+    dropAllTables,
+    insert,
+    select,
+    update,
+    remove,
+    query,
+    end,
 };
 
 require('make-runnable');
