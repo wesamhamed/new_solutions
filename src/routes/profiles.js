@@ -1,14 +1,23 @@
 require('dotenv').config();
 const express = require("express");
+const { check } = require('express-validator');
 const router = express.Router();
 const { getProfileById, createProfile, updateProfile, deleteProfileById } = require("../controllers/profileController");
-router.get('/:id', getProfileById);
+const validate = require("../utils/validatorRoute");
 
-router.post('/', createProfile)
+router.get('/:id', validate([check("id").notEmpty().trim().escape().isNumeric()]), getProfileById);
 
-router.put('/:id', updateProfile);
+router.post('/', validate([
+    check("id").notEmpty().trim().escape().isNumeric(),
+    check("userName").notEmpty().trim().escape()
+]), createProfile)
 
-router.delete('/:id', deleteProfileById)
+router.put('/:id', validate([
+    check("id").notEmpty().trim().escape().isNumeric(),
+    check("userName").notEmpty().trim().escape()
+]), updateProfile);
+
+router.delete('/:id', validate([check("id").notEmpty().trim().escape().isNumeric()]), deleteProfileById)
 
 
 module.exports = router;
